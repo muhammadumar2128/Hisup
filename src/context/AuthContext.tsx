@@ -9,12 +9,14 @@ interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  signOut: async () => {}
+  signOut: async () => {},
+  refreshUser: async () => {}
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -23,70 +25,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) throw sessionError;
+  const fetchUser = async () => {
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) throw sessionError;
 
-        if (session?.user) {
-          // 1. Fetch user role and basic profile
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('role_id, email')
-            .eq('id', session.user.id)
-            .single();
+      if (session?.user) {
+        // 1. Fetch user role and basic profile
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('role_id, email')
+          .eq('id', session.user.id)
+          .single();
 
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, avatar_url, phone')
-            .eq('id', session.user.id)
-            .single();
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, avatar_url, phone')
+          .eq('id', session.user.id)
+          .single();
 
-          if (userError || profileError) {
-             console.error("AuthContext Fetch Error details:", JSON.stringify(userError || profileError, null, 2));
-             setUser(null);
-             setLoading(false);
-             return;
-          }
-
-          if (userData && profileData) {
-             const roles: Record<number, Role> = { 1: 'Admin', 2: 'Faculty', 3: 'Student', 4: 'Librarian', 5: 'Finance' };
-             const role = roles[userData.role_id] || 'Student';
-             
-             let designation = '';
-             if (role === 'Faculty') {
-               const { data: facultyData } = await supabase
-                 .from('faculty_profiles')
-                 .select('designation')
-                 .eq('id', session.user.id)
-                 .single();
-               if (facultyData) designation = facultyData.designation;
-             }
-
-             setUser({
-               id: session.user.id,
-               email: userData.email,
-               role: role,
-               firstName: profileData.first_name,
-               lastName: profileData.last_name,
-               avatarUrl: profileData.avatar_url,
-               phone: profileData.phone,
-               designation: designation
-             });
-          }
-        } else {
-          setUser(null);
+        if (userError || profileError) {
+           console.error("AuthContext Fetch Error details:", JSON.stringify(userError || profileError, null, 2));
+           setUser(null);
+           setLoading(false);
+           return;
         }
-      } catch (error) {
-        console.error('Authentication Error:', error);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
 
+        if (userData && profileData) {
+           const roles: Record<number, Role> = { 1: 'Admin', 2: 'Faculty', 3: 'Student', 4: 'Librarian', 5: 'Finance' };
+           const role = roles[userData.role_id] || 'Student';
+           
+           let designation = '';
+           if (role === 'Faculty') {
+             const { data: facultyData } = await supabase
+               .from('faculty_profiles')
+               .select('designation')
+               .eq('id', session.user.id)
+               .single();
+             if (facultyData) designation = facultyData.designation;
+           }
+
+           setUser({
+             id: session.user.id,
+             email: userData.email,
+             role: role,
+             firstName: profileData.first_name,
+             lastName: profileData.last_name,
+             avatarUrl: profileData.avatar_url,
+             phone: profileData.phone,
+             designation: designation
+           });
+        }
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Authentication Error:', error);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchUser();
 
     // Listen for auth state changes (login, logout, token refresh)
@@ -151,7 +153,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signOut, refreshUser: fetchUser }}>
       {children}
     </AuthContext.Provider>
   );

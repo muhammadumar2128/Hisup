@@ -44,11 +44,13 @@ export async function GET(request: Request) {
         id,
         student_id,
         section_id,
-        profiles!course_registrations_student_id_fkey ( 
-          first_name, 
-          last_name,
-          phone,
-          student_profiles ( registration_number )
+        student_profiles!course_registrations_student_id_fkey (
+          registration_number,
+          profiles ( 
+            first_name, 
+            last_name,
+            phone
+          )
         )
       `)
       .in('section_id', sectionIds)
@@ -59,12 +61,14 @@ export async function GET(request: Request) {
     // Map data to a flat structure
     const mappedStudents = (rosterData || []).map((reg: any) => {
        const sectionInfo: any = sectionData.find(s => s.id === reg.section_id);
+       const studentProfile = reg.student_profiles;
+       const profile = studentProfile?.profiles;
        return {
          id: reg.id,
          student_id: reg.student_id,
-         registration_number: reg.profiles?.student_profiles?.registration_number || 'N/A',
-         name: `${reg.profiles?.first_name || 'New'} ${reg.profiles?.last_name || 'User'}`,
-         phone: reg.profiles?.phone || 'N/A',
+         registration_number: studentProfile?.registration_number || 'N/A',
+         name: `${profile?.first_name || 'New'} ${profile?.last_name || 'User'}`,
+         phone: profile?.phone || 'N/A',
          course_code: sectionInfo?.courses?.course_code || 'N/A',
          course_title: sectionInfo?.courses?.title || 'N/A',
          section_name: sectionInfo?.section_name || 'N/A',

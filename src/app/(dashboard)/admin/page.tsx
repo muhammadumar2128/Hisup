@@ -3,7 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Users, GraduationCap, Building, Banknote } from 'lucide-react';
+import GradientStatCard from '@/components/ui/GradientStatCard';
+import ProgressRing from '@/components/ui/ProgressRing';
+import { Users, GraduationCap, Building, Banknote, TrendingUp } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface DashboardStats {
@@ -16,7 +18,7 @@ interface DashboardStats {
   totalEnrollments: number;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f97316', '#ec4899'];
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -67,7 +69,21 @@ export default function AdminDashboard() {
   }, []);
 
   if (loading || !stats) {
-     return <div className="animate-pulse space-y-4"><div className="h-32 bg-gray-200 rounded-lg"></div><div className="h-64 bg-gray-200 rounded-lg"></div></div>;
+    return (
+      <div className="space-y-6">
+        <div className="animate-pulse space-y-3">
+          <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-xl w-60"></div>
+          <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-lg w-40"></div>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map(i => <div key={i} className="h-36 bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse"></div>)}
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="h-80 bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse"></div>
+          <div className="h-80 bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse"></div>
+        </div>
+      </div>
+    );
   }
 
   const roleData = [
@@ -86,64 +102,55 @@ export default function AdminDashboard() {
   const totalUsers = stats.students + stats.faculty + stats.admin + stats.librarian + stats.finance;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">System overview and graphical analytics.</p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Admin Dashboard</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">System overview and graphical analytics</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalUsers}</div>
-            <p className="text-xs text-muted-foreground mt-1">Across all portals</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Enrolled Students</CardTitle>
-            <GraduationCap className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.students}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active Accounts</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Courses</CardTitle>
-            <Building className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCourses}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total Catalog</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Registrations</CardTitle>
-            <Banknote className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEnrollments}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total Enrollments</p>
-          </CardContent>
-        </Card>
+      {/* Gradient Stat Cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <GradientStatCard
+          title="Total Users"
+          value={totalUsers}
+          subtitle="Across all portals"
+          icon={Users}
+          gradient="blue"
+        />
+        <GradientStatCard
+          title="Enrolled Students"
+          value={stats.students}
+          subtitle="Active accounts"
+          icon={GraduationCap}
+          gradient="emerald"
+        />
+        <GradientStatCard
+          title="Courses"
+          value={stats.totalCourses}
+          subtitle="Total catalog"
+          icon={Building}
+          gradient="orange"
+        />
+        <GradientStatCard
+          title="Registrations"
+          value={stats.totalEnrollments}
+          subtitle="Total enrollments"
+          icon={Banknote}
+          gradient="purple"
+        />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4 h-96 flex flex-col">
-          <CardHeader>
-            <CardTitle>Platform Distribution</CardTitle>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        {/* Platform Distribution Chart */}
+        <Card className="lg:col-span-4 flex flex-col border-0 shadow-lg bg-white dark:bg-slate-900 rounded-3xl overflow-hidden">
+          <CardHeader className="border-b border-slate-50 dark:border-slate-800 pb-4">
+            <CardTitle className="text-xl font-bold flex items-center text-slate-900 dark:text-white">
+              <Users className="mr-2 h-5 w-5 text-blue-600" />
+              Platform Distribution
+            </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 min-h-0">
+          <CardContent className="flex-1 min-h-0 pt-4" style={{ height: 320 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -153,31 +160,60 @@ export default function AdminDashboard() {
                   labelLine={false}
                   label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                   outerRadius={100}
+                  innerRadius={55}
                   fill="#8884d8"
                   dataKey="value"
+                  paddingAngle={3}
+                  strokeWidth={0}
                 >
                   {roleData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{ 
+                    borderRadius: '16px', 
+                    border: 'none', 
+                    boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className="col-span-3 h-96 flex flex-col">
-          <CardHeader>
-            <CardTitle>Academic Engagement</CardTitle>
+        {/* Academic Engagement Chart */}
+        <Card className="lg:col-span-3 flex flex-col border-0 shadow-lg bg-white dark:bg-slate-900 rounded-3xl overflow-hidden">
+          <CardHeader className="border-b border-slate-50 dark:border-slate-800 pb-4">
+            <CardTitle className="text-xl font-bold flex items-center text-slate-900 dark:text-white">
+              <TrendingUp className="mr-2 h-5 w-5 text-emerald-600" />
+              Academic Engagement
+            </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 min-h-0">
+          <CardContent className="flex-1 min-h-0 pt-4" style={{ height: 320 }}>
              <ResponsiveContainer width="100%" height="100%">
                <BarChart data={academicData}>
-                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                 <XAxis dataKey="name" />
-                 <YAxis />
-                 <Tooltip />
-                 <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                 <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 600 }} />
+                 <YAxis tick={{ fontSize: 12 }} />
+                 <Tooltip
+                   contentStyle={{ 
+                     borderRadius: '16px', 
+                     border: 'none', 
+                     boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)',
+                     fontSize: '14px',
+                     fontWeight: 600,
+                   }}
+                 />
+                 <Bar dataKey="value" fill="url(#barGradient)" radius={[8, 8, 0, 0]} />
+                 <defs>
+                   <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                     <stop offset="0%" stopColor="#3b82f6" />
+                     <stop offset="100%" stopColor="#6366f1" />
+                   </linearGradient>
+                 </defs>
                </BarChart>
              </ResponsiveContainer>
           </CardContent>

@@ -282,6 +282,9 @@ CREATE TABLE IF NOT EXISTS library_fines (
 -- ==========================================
 -- This exactly matches the required application logic (creates students, faculty, and adds registration fee invoices + library fee).
 
+-- Ensure sequence exists for sequential registration numbers
+CREATE SEQUENCE IF NOT EXISTS public.student_reg_seq START WITH 1;
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -289,6 +292,7 @@ DECLARE
     v_role_name VARCHAR;
     v_program_id UUID;
     v_reg_number VARCHAR;
+    v_seq INT;
     v_fee_amount DECIMAL(10,2) := 0;
     v_library_fee DECIMAL(10,2) := 5000.00;
     v_total_fee DECIMAL(10,2) := 0;
@@ -326,7 +330,8 @@ BEGIN
 
     -- 4. Create role-specific profile based on the actual role
     IF v_role_name = 'Student' THEN
-        v_reg_number := 'SP' || TO_CHAR(NOW(), 'YY') || '-' || UPPER(SUBSTRING(NEW.id::text FROM 1 FOR 8));
+        v_seq := nextval('public.student_reg_seq');
+        v_reg_number := 'REG-' || TO_CHAR(NOW(), 'YYYY') || '-' || LPAD(v_seq::text, 4, '0');
         
         BEGIN
             v_program_id := NULLIF(NEW.raw_user_meta_data->>'program_id', '')::UUID;
@@ -411,6 +416,7 @@ CREATE POLICY users_read_all ON users FOR SELECT USING (true);
 CREATE POLICY users_admin_all ON users FOR ALL USING (get_current_user_role() = 'Admin');
 
 CREATE POLICY faculty_profiles_read_all ON faculty_profiles FOR SELECT USING (true);
+CREATE POLICY faculty_profiles_update_own ON faculty_profiles FOR UPDATE USING (id = auth.uid());
 CREATE POLICY faculty_profiles_admin_all ON faculty_profiles FOR ALL USING (get_current_user_role() = 'Admin');
 
 -- Student specific

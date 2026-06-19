@@ -45,10 +45,22 @@ interface FacultyProfileData {
 }
 
 export default function FacultyProfile() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [profile, setProfile] = useState<FacultyProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    currentAddress: '',
+    permanentAddress: '',
+    specialization: ''
+  });
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -131,6 +143,14 @@ export default function FacultyProfile() {
             faculty_profiles: Array.isArray(data.faculty_profiles) ? data.faculty_profiles[0] : (data.faculty_profiles || null)
           };
           setProfile(formattedData as any);
+          setFormData({
+            firstName: formattedData.first_name || '',
+            lastName: formattedData.last_name || '',
+            phone: formattedData.phone || '',
+            currentAddress: formattedData.current_address || '',
+            permanentAddress: formattedData.permanent_address || '',
+            specialization: formattedData.faculty_profiles?.specialization || ''
+          });
         }
       } catch (err: any) {
         console.error('Error in fetchProfile:', err.message || err);
@@ -141,6 +161,59 @@ export default function FacultyProfile() {
 
     fetchProfile();
   }, [user]);
+
+  const handleUpdate = async () => {
+    setUpdating(true);
+    setMessage(null);
+    try {
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .update({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone,
+          current_address: formData.currentAddress,
+          permanent_address: formData.permanentAddress
+        })
+        .eq('id', user?.id);
+
+      if (profileErr) throw profileErr;
+
+      const { error: facultyErr } = await supabase
+        .from('faculty_profiles')
+        .update({
+          specialization: formData.specialization
+        })
+        .eq('id', user?.id);
+
+      if (facultyErr) throw facultyErr;
+
+      setProfile(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone,
+          current_address: formData.currentAddress,
+          permanent_address: formData.permanentAddress,
+          faculty_profiles: {
+            ...prev.faculty_profiles,
+            specialization: formData.specialization
+          }
+        };
+      });
+
+      await refreshUser();
+      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error("Update error:", err);
+      setMessage({ type: 'error', text: err.message || 'Failed to update profile' });
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -164,6 +237,14 @@ export default function FacultyProfile() {
 
   return (
     <div className="space-y-8 pb-12">
+      {message && (
+        <div className={`px-4 py-3 rounded-2xl text-sm font-semibold border ${
+          message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
+        }`}>
+          {message.text}
+        </div>
+      )}
+
       {/* Header Profile Section */}
       <div className="relative h-48 rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-700 overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -251,11 +332,20 @@ export default function FacultyProfile() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800/50">
-                <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
-                  {academicInfo?.specialization || 'Not specified'}
-                </p>
-              </div>
+              {isEditing ? (
+                <Input 
+                  value={formData.specialization} 
+                  onChange={(e) => setFormData({...formData, specialization: e.target.value})}
+                  className="bg-white dark:bg-gray-800 border border-gray-300 font-semibold focus-visible:ring-2 focus-visible:ring-blue-500" 
+                  placeholder="e.g. Artificial Intelligence, Data Science"
+                />
+              ) : (
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800/50">
+                  <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                    {academicInfo?.specialization || 'Not specified'}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -263,11 +353,31 @@ export default function FacultyProfile() {
         {/* Main Content Info */}
         <div className="lg:col-span-2 space-y-8">
           <Card className="border-0 shadow-md bg-white dark:bg-gray-800 rounded-3xl overflow-hidden">
-            <CardHeader className="border-b border-gray-50 dark:border-gray-700/50 pb-4">
+            <CardHeader className="border-b border-gray-50 dark:border-gray-700/50 pb-4 flex flex-row items-center justify-between">
               <CardTitle className="text-xl font-bold flex items-center text-gray-900 dark:text-white">
                 <User className="mr-2 h-5 w-5 text-indigo-600" />
                 Personal Information
               </CardTitle>
+              <Button 
+                variant={isEditing ? "ghost" : "outline"} 
+                size="sm"
+                onClick={() => {
+                  if (isEditing) {
+                    setFormData({
+                      firstName: profile.first_name || '',
+                      lastName: profile.last_name || '',
+                      phone: profile.phone || '',
+                      currentAddress: profile.current_address || '',
+                      permanentAddress: profile.permanent_address || '',
+                      specialization: academicInfo?.specialization || ''
+                    });
+                  }
+                  setIsEditing(!isEditing);
+                  setMessage(null);
+                }}
+              >
+                {isEditing ? 'Cancel' : 'Edit Info'}
+              </Button>
             </CardHeader>
             <CardContent className="pt-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
@@ -275,14 +385,24 @@ export default function FacultyProfile() {
                   <Label className="text-xs font-bold uppercase tracking-widest text-gray-400">First Name</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
-                    <Input value={profile.first_name} readOnly className="pl-10 bg-gray-50 dark:bg-gray-900 border-0 font-semibold" />
+                    <Input 
+                      value={isEditing ? formData.firstName : profile.first_name} 
+                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                      readOnly={!isEditing} 
+                      className={`pl-10 font-semibold ${isEditing ? "bg-white dark:bg-gray-800 border border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500" : "bg-gray-50 dark:bg-gray-900 border-0"}`} 
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-widest text-gray-400">Last Name</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
-                    <Input value={profile.last_name} readOnly className="pl-10 bg-gray-50 dark:bg-gray-900 border-0 font-semibold" />
+                    <Input 
+                      value={isEditing ? formData.lastName : profile.last_name} 
+                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                      readOnly={!isEditing} 
+                      className={`pl-10 font-semibold ${isEditing ? "bg-white dark:bg-gray-800 border border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500" : "bg-gray-50 dark:bg-gray-900 border-0"}`} 
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -296,7 +416,12 @@ export default function FacultyProfile() {
                   <Label className="text-xs font-bold uppercase tracking-widest text-gray-400">Phone Number</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
-                    <Input value={profile.phone || 'N/A'} readOnly className="pl-10 bg-gray-50 dark:bg-gray-900 border-0 font-semibold" />
+                    <Input 
+                      value={isEditing ? formData.phone : profile.phone || 'N/A'} 
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      readOnly={!isEditing} 
+                      className={`pl-10 font-semibold ${isEditing ? "bg-white dark:bg-gray-800 border border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500" : "bg-gray-50 dark:bg-gray-900 border-0"}`} 
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -335,23 +460,72 @@ export default function FacultyProfile() {
             <CardContent className="pt-8 space-y-6">
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase tracking-widest text-gray-400">Current Address</Label>
-                <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl font-semibold text-gray-700 dark:text-gray-300">
-                  {profile.current_address || 'Not updated'}
-                </div>
+                {isEditing ? (
+                  <textarea 
+                    className="w-full min-h-[80px] p-3 rounded-2xl border border-gray-300 bg-white dark:bg-gray-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-300"
+                    value={formData.currentAddress}
+                    onChange={(e) => setFormData({...formData, currentAddress: e.target.value})}
+                  />
+                ) : (
+                  <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl font-semibold text-gray-700 dark:text-gray-300">
+                    {profile.current_address || 'Not updated'}
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase tracking-widest text-gray-400">Permanent Address</Label>
-                <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl font-semibold text-gray-700 dark:text-gray-300">
-                  {profile.permanent_address || 'Not updated'}
-                </div>
+                {isEditing ? (
+                  <textarea 
+                    className="w-full min-h-[80px] p-3 rounded-2xl border border-gray-300 bg-white dark:bg-gray-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700 dark:text-gray-300"
+                    value={formData.permanentAddress}
+                    onChange={(e) => setFormData({...formData, permanentAddress: e.target.value})}
+                  />
+                ) : (
+                  <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl font-semibold text-gray-700 dark:text-gray-300">
+                    {profile.permanent_address || 'Not updated'}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
           
-          <div className="flex justify-end pt-4">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 rounded-2xl shadow-xl font-bold transition-all hover:-translate-y-1">
-              Update Profile Information
-            </Button>
+          <div className="flex justify-end gap-3 pt-4">
+            {isEditing ? (
+              <>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setFormData({
+                      firstName: profile.first_name || '',
+                      lastName: profile.last_name || '',
+                      phone: profile.phone || '',
+                      currentAddress: profile.current_address || '',
+                      permanentAddress: profile.permanent_address || '',
+                      specialization: academicInfo?.specialization || ''
+                    });
+                    setMessage(null);
+                  }}
+                  className="px-8 py-6 rounded-2xl font-bold"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleUpdate}
+                  disabled={updating}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 rounded-2xl shadow-xl font-bold transition-all"
+                >
+                  {updating ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </>
+            ) : (
+              <Button 
+                onClick={() => setIsEditing(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 rounded-2xl shadow-xl font-bold transition-all hover:-translate-y-1"
+              >
+                Update Profile Information
+              </Button>
+            )}
           </div>
         </div>
       </div>

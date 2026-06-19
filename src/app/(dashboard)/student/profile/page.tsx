@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/Label';
 import { User, Phone, MapPin, CreditCard, Calendar, Mail, Shield, Info, Camera } from 'lucide-react';
 
 export default function StudentProfile() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -129,6 +129,7 @@ export default function StudentProfile() {
         permanent_address: formData.permanentAddress
       });
       
+      await refreshUser();
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setIsEditing(false);
     } catch (err: any) {

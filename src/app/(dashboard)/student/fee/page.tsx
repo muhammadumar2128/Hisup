@@ -24,6 +24,7 @@ interface Invoice {
 export default function StudentFee() {
   const { user } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [studentProfile, setStudentProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function StudentFee() {
             due_date,
             status,
             challan_number,
+            late_fee_amount,
             semesters (
               semester_number,
               term,
@@ -51,6 +53,14 @@ export default function StudentFee() {
         if (error) throw error;
         // @ts-ignore
         setInvoices(data || []);
+
+        // Fetch student profile details as well
+        const { data: sProfile } = await supabase
+          .from('student_profiles')
+          .select('registration_number, programs(name, code)')
+          .eq('id', user.id)
+          .single();
+        setStudentProfile(sProfile);
       } catch (error) {
         console.error("Error fetching invoices:", error);
       } finally {
@@ -116,9 +126,87 @@ export default function StudentFee() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return alert('Please allow popups for this site');
 
+    // @ts-ignore
+    const lateFee = inv.late_fee_amount || 0;
     const libraryFee = 5000;
-    const tuitionFee = Math.max(inv.total_amount - libraryFee, 0);
+    const tuitionFee = Math.max(inv.total_amount - libraryFee - lateFee, 0);
     const grandTotal = inv.total_amount;
+
+    const copyTypes = ['Bank Copy', 'University Copy', 'Student Copy'];
+
+    const copyHtmls = copyTypes.map((copyType) => `
+      <div class="challan-copy">
+        <div class="copy-header">
+          <div class="copy-title-tag">${copyType}</div>
+          <div class="university-brand">
+            <div class="uni-name">HITEC UNIVERSITY</div>
+            <div class="uni-sub">TAXILA CANTT, PAKISTAN</div>
+          </div>
+          <div class="bank-title">HABIB BANK LIMITED</div>
+          <div class="bank-acct">A/C No: 0123-456789-012 (Fee Collection Branch)</div>
+        </div>
+        
+        <div class="details-section">
+          <div class="detail-row"><span class="det-label">Challan No:</span><span class="det-val font-mono">${inv.challan_number}</span></div>
+          <div class="detail-row"><span class="det-label">Reg No:</span><span class="det-val font-mono">${studentProfile?.registration_number || 'N/A'}</span></div>
+          <div class="detail-row"><span class="det-label">Name:</span><span class="det-val">${user?.firstName || 'New'} ${user?.lastName || 'User'}</span></div>
+          <div class="detail-row"><span class="det-label">Program:</span><span class="det-val">${studentProfile?.programs?.code || 'N/A'}</span></div>
+          <div class="detail-row"><span class="det-label">Semester:</span><span class="det-val">Semester ${inv.semesters?.semester_number || 'N/A'} (${inv.semesters?.term || ''})</span></div>
+          <div class="detail-row"><span class="det-label">Due Date:</span><span class="det-val text-red">${new Date(inv.due_date).toLocaleDateString()}</span></div>
+        </div>
+
+        <table class="challan-table">
+          <thead>
+             <tr>
+                <th>Particulars</th>
+                <th class="text-right">Amount (PKR)</th>
+             </tr>
+          </thead>
+          <tbody>
+             <tr>
+                <td>Tuition & Exam Fee</td>
+                <td class="text-right">${tuitionFee.toLocaleString()}.00</td>
+             </tr>
+             <tr>
+                <td>Library & IT Support</td>
+                <td class="text-right">${libraryFee.toLocaleString()}.00</td>
+             </tr>
+             <tr>
+                <td>Late Fee Surcharge</td>
+                <td class="text-right">${lateFee.toLocaleString()}.00</td>
+             </tr>
+             <tr class="total-row">
+                <td>Grand Total</td>
+                <td class="text-right">PKR ${grandTotal.toLocaleString()}.00</td>
+             </tr>
+          </tbody>
+        </table>
+
+        <div class="barcode-container">
+          <div class="barcode"></div>
+          <div class="barcode-text">${inv.challan_number}</div>
+        </div>
+
+        <div class="signature-section">
+          <div class="sig-col">
+             <div class="sig-line"></div>
+             <div class="sig-label">Depositor</div>
+          </div>
+          <div class="sig-col">
+             <div class="sig-line"></div>
+             <div class="sig-label">Bank Officer</div>
+          </div>
+        </div>
+
+        <div class="challan-footer">
+          * Please pay at any HBL Branch. Fee is non-refundable. Submit University Copy to accounts department immediately.
+        </div>
+      </div>
+    `).join(`
+      <div class="divider">
+         <div class="scissors">✂</div>
+      </div>
+    `);
 
     const html = `
       <!DOCTYPE html>
@@ -126,230 +214,235 @@ export default function StudentFee() {
       <head>
           <meta charset="UTF-8">
           <title>Fee Challan - ${inv.challan_number}</title>
+          <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
           <style>
-              body { 
-                  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                  padding: 20px; 
-                  color: #000; 
-                  font-size: 14px;
-                  background: #fff;
+              @media print {
+                  @page {
+                      size: A4 landscape;
+                      margin: 4mm;
+                  }
+                  body {
+                      margin: 0;
+                      padding: 0;
+                      background: #fff;
+                      -webkit-print-color-adjust: exact;
+                      print-color-adjust: exact;
+                  }
               }
-              .challan-container {
-                  max-width: 800px;
-                  margin: 0 auto;
-                  border: 2px solid #1a365d;
-                  padding: 30px;
-                  position: relative;
+              * {
+                  box-sizing: border-box;
               }
-              .watermark {
-                  position: absolute;
-                  top: 50%;
-                  left: 50%;
-                  transform: translate(-50%, -50%) rotate(-45deg);
-                  font-size: 80px;
-                  color: rgba(0, 0, 0, 0.04);
-                  white-space: nowrap;
-                  pointer-events: none;
-                  z-index: 0;
+              body {
+                  font-family: 'Outfit', 'Inter', sans-serif;
+                  color: #0f172a;
+                  background-color: #ffffff;
+                  margin: 0;
+                  padding: 5px;
               }
-              .header { 
-                  text-align: center; 
-                  margin-bottom: 30px; 
-                  border-bottom: 2px solid #1a365d; 
-                  padding-bottom: 15px; 
-                  position: relative;
-                  z-index: 1;
-              }
-              .header h1 { 
-                  margin: 0; 
-                  color: #1a365d; 
-                  font-size: 28px;
-                  text-transform: uppercase;
-                  letter-spacing: 2px;
-              }
-              .header p { 
-                  margin: 5px 0 0; 
-                  font-weight: bold; 
-                  color: #4a5568;
-                  font-size: 16px;
-              }
-              .top-details {
+              .challan-page {
                   display: flex;
                   justify-content: space-between;
-                  margin-bottom: 25px;
-                  z-index: 1;
+                  width: 100%;
+                  max-width: 1120px;
+                  margin: 0 auto;
+                  background: #fff;
+                  padding: 5px;
+              }
+              .challan-copy {
+                  width: 32%;
+                  border: 1.5px solid #1e293b;
+                  padding: 10px;
+                  border-radius: 8px;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: space-between;
+                  background: #fff;
+                  font-size: 10px;
+              }
+              .divider {
+                  width: 2%;
                   position: relative;
+                  border-left: 1px dashed #64748b;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
               }
-              .details-box { 
-                  width: 48%; 
+              .scissors {
+                  position: absolute;
+                  top: 40%;
+                  transform: translateY(-50%) rotate(90deg);
+                  background: #fff;
+                  color: #64748b;
+                  font-size: 14px;
+                  padding: 4px;
               }
-              .details-box p {
-                  margin: 8px 0;
+              .copy-header {
+                  text-align: center;
+                  border-bottom: 2px solid #1e3a8a;
+                  padding-bottom: 6px;
+                  margin-bottom: 8px;
               }
-              .label {
-                  font-weight: 600;
+              .copy-title-tag {
+                  background: #1e3a8a;
+                  color: #fff;
+                  font-weight: 800;
+                  font-size: 9px;
+                  letter-spacing: 1px;
+                  padding: 2px 8px;
+                  border-radius: 4px;
                   display: inline-block;
-                  width: 120px;
-              }
-              .value {
-                  border-bottom: 1px dotted #ccc;
-                  display: inline-block;
-                  width: calc(100% - 130px);
-                  padding-left: 5px;
-              }
-              .due-date {
-                  color: #e53e3e;
-                  font-weight: bold;
-              }
-              table { 
-                  width: 100%; 
-                  border-collapse: collapse; 
-                  margin-bottom: 30px; 
-                  z-index: 1;
-                  position: relative;
-              }
-              th, td { 
-                  padding: 12px; 
-                  text-align: left; 
-                  border: 1px solid #cbd5e0; 
-              }
-              th { 
-                  background-color: #f7fafc; 
-                  color: #1a365d;
-                  font-weight: 600;
+                  margin-bottom: 4px;
                   text-transform: uppercase;
-                  font-size: 12px;
               }
-              .amount-col {
+              .uni-name {
+                  font-size: 14px;
+                  font-weight: 900;
+                  color: #1e3a8a;
+                  letter-spacing: 0.5px;
+                  margin: 2px 0 0;
+              }
+              .uni-sub {
+                  font-size: 8px;
+                  color: #64748b;
+                  font-weight: 700;
+                  margin-bottom: 4px;
+              }
+              .bank-title {
+                  font-size: 11px;
+                  font-weight: 800;
+                  color: #0f766e;
+                  margin-top: 4px;
+              }
+              .bank-acct {
+                  font-size: 8px;
+                  font-weight: 700;
+                  color: #374151;
+              }
+              .details-section {
+                  margin-bottom: 8px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 3px;
+              }
+              .detail-row {
+                  display: flex;
+                  justify-content: space-between;
+                  line-height: 1.2;
+              }
+              .det-label {
+                  font-weight: 700;
+                  color: #64748b;
+                  font-size: 8px;
+                  text-transform: uppercase;
+                  width: 70px;
+                  flex-shrink: 0;
+              }
+              .det-val {
+                  font-weight: 700;
+                  color: #1e293b;
                   text-align: right;
+                  border-bottom: 1px dotted #cbd5e1;
+                  flex-grow: 1;
+                  margin-left: 4px;
+                  font-size: 9px;
+              }
+              .font-mono {
+                  font-family: 'Courier New', Courier, monospace;
+              }
+              .text-red {
+                  color: #ef4444 !important;
+              }
+              .challan-table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin-bottom: 8px;
+              }
+              .challan-table th, .challan-table td {
+                  border: 1px solid #cbd5e1;
+                  padding: 4px 6px;
+                  text-align: left;
+                  font-size: 8.5px;
+              }
+              .challan-table th {
+                  background: #f8fafc;
+                  font-weight: 700;
+                  color: #1e3a8a;
+                  text-transform: uppercase;
+              }
+              .text-right {
+                  text-align: right !important;
               }
               .total-row {
-                  font-weight: bold;
-                  background-color: #f7fafc;
+                  font-weight: 900;
+                  background: #f1f5f9;
               }
               .total-row td {
-                  font-size: 16px;
-                  border-top: 2px solid #1a365d;
+                  font-size: 10px !important;
+                  color: #1e3a8a;
+                  border-top: 1.5px solid #1e3a8a;
               }
-              .bank-details {
-                  margin-bottom: 40px;
-                  padding: 15px;
-                  background-color: #f7fafc;
-                  border: 1px solid #cbd5e0;
-                  border-radius: 4px;
-                  z-index: 1;
-                  position: relative;
+              .barcode-container {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  margin: 6px 0;
               }
-              .bank-details h4 {
-                  margin: 0 0 10px 0;
-                  color: #1a365d;
+              .barcode {
+                  width: 130px;
+                  height: 24px;
+                  background: repeating-linear-gradient(
+                      90deg,
+                      #000,
+                      #000 1.5px,
+                      #fff 1.5px,
+                      #fff 3.5px,
+                      #000 3.5px,
+                      #000 4.5px,
+                      #fff 4.5px,
+                      #fff 6.5px
+                  );
               }
-              .bank-details p {
-                  margin: 4px 0;
+              .barcode-text {
+                  font-size: 7px;
+                  font-family: monospace;
+                  margin-top: 2px;
+                  letter-spacing: 2px;
+                  font-weight: 700;
               }
-              .signatures {
+              .signature-section {
                   display: flex;
                   justify-content: space-between;
-                  margin-top: 60px;
-                  z-index: 1;
-                  position: relative;
+                  margin-top: 15px;
+                  margin-bottom: 6px;
+              }
+              .sig-col {
+                  width: 45%;
+                  text-align: center;
               }
               .sig-line {
-                  width: 200px;
+                  border-top: 1px solid #475569;
+                  margin-bottom: 2px;
+              }
+              .sig-label {
+                  font-size: 7.5px;
+                  color: #64748b;
+                  font-weight: 650;
+                  text-transform: uppercase;
+              }
+              .challan-footer {
+                  font-size: 7px;
+                  color: #64748b;
                   text-align: center;
-                  border-top: 1px solid #000;
-                  padding-top: 8px;
-                  font-size: 12px;
-              }
-              .footer { 
-                  text-align: center; 
-                  margin-top: 40px; 
-                  font-size: 11px; 
-                  color: #718096;
-                  border-top: 1px dashed #cbd5e0;
-                  padding-top: 15px;
-                  z-index: 1;
-                  position: relative;
-              }
-              
-              @media print {
-                  body { padding: 0; }
-                  .challan-container { border: none; padding: 0; max-width: 100%; }
+                  border-top: 1px dotted #cbd5e1;
+                  padding-top: 4px;
+                  line-height: 1.25;
               }
           </style>
       </head>
       <body>
-          <div class="challan-container">
-              <div class="watermark">HITEC UNIVERSITY</div>
-              
-              <div class="header">
-                  <h1>HITEC University</h1>
-                  <p>Official Fee Challan / Invoice</p>
-              </div>
-              
-              <div class="top-details">
-                  <div class="details-box">
-                      <p><span class="label">Student Name:</span> <span class="value">${user?.firstName || 'Student'} ${user?.lastName || ''}</span></p>
-                      <p><span class="label">Email:</span> <span class="value">${user?.email}</span></p>
-                      <p><span class="label">Academic Term:</span> <span class="value">${inv.semesters.term} ${inv.semesters.academic_year}</span></p>
-                  </div>
-                  <div class="details-box">
-                      <p><span class="label">Challan No:</span> <span class="value" style="font-family: monospace; font-weight: bold;">${inv.challan_number}</span></p>
-                      <p><span class="label">Issue Date:</span> <span class="value">${new Date().toLocaleDateString()}</span></p>
-                      <p><span class="label">Due Date:</span> <span class="value due-date">${new Date(inv.due_date).toLocaleDateString()}</span></p>
-                  </div>
-              </div>
-
-              <table>
-                  <thead>
-                      <tr>
-                          <th>S.No</th>
-                          <th>Description of Particulars</th>
-                          <th class="amount-col">Amount (PKR)</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      <tr>
-                          <td>1</td>
-                          <td>Course Tuition & Registration Fee</td>
-                          <td class="amount-col">${tuitionFee.toLocaleString()}.00</td>
-                      </tr>
-                      <tr>
-                          <td>2</td>
-                          <td>Library / IT Services</td>
-                          <td class="amount-col">${libraryFee.toLocaleString()}.00</td>
-                      </tr>
-                      <tr>
-                          <td>3</td>
-                          <td>Late Fee Surcharge (If applicable)</td>
-                          <td class="amount-col">0.00</td>
-                      </tr>
-                      <tr class="total-row">
-                          <td colspan="2" style="text-align: right;">Total Amount Payable:</td>
-                          <td class="amount-col">${grandTotal.toLocaleString()}.00</td>
-                      </tr>
-                  </tbody>
-              </table>
-
-              <div class="bank-details">
-                  <h4>Bank Payment Details</h4>
-                  <p><strong>Bank Name:</strong> Habib Bank Limited (HBL) - University Branch</p>
-                  <p><strong>Account Title:</strong> HITEC University Fee Collection</p>
-                  <p><strong>Account Number:</strong> 0123-456789-012</p>
-              </div>
-
-              <div class="signatures">
-                  <div class="sig-line">Cashier / Bank Officer Signature</div>
-                  <div class="sig-line">Depositor Signature</div>
-              </div>
-
-              <div class="footer">
-                  <p>1. Please deposit the fee before the due date. A late fee of PKR 1,000 will be charged after the due date.</p>
-                  <p>2. This challan is generated electronically and requires a bank stamp to be considered a valid receipt.</p>
-                  <p>3. Submit the University Copy to the Accounts Office immediately after payment.</p>
-              </div>
+          <div class="challan-page">
+              ${copyHtmls}
           </div>
-          
           <script>
               window.onload = function() { 
                   setTimeout(function() { window.print(); }, 500);

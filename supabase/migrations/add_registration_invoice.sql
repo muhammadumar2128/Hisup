@@ -10,6 +10,9 @@
 -- HOW TO RUN: Paste this in the Supabase SQL Editor and click "Run"
 -- ============================================================
 
+-- Ensure sequence exists for sequential registration numbers
+CREATE SEQUENCE IF NOT EXISTS public.student_reg_seq START WITH 1;
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -17,6 +20,7 @@ DECLARE
     v_role_name VARCHAR;
     v_program_id UUID;
     v_reg_number VARCHAR;
+    v_seq INT;
     v_fee_amount DECIMAL(10,2) := 0;
     v_library_fee DECIMAL(10,2) := 5000.00;
     v_total_fee DECIMAL(10,2) := 0;
@@ -55,8 +59,9 @@ BEGIN
 
     -- 5. Create role-specific profile based on the actual role
     IF v_role_name = 'Student' THEN
-        -- Auto-generate a unique registration number: SP26-A1B2C3D4
-        v_reg_number := 'SP' || TO_CHAR(NOW(), 'YY') || '-' || UPPER(SUBSTRING(NEW.id::text FROM 1 FOR 8));
+        -- Auto-generate a unique sequential registration number: REG-YYYY-XXXX (incrementing)
+        v_seq := nextval('public.student_reg_seq');
+        v_reg_number := 'REG-' || TO_CHAR(NOW(), 'YYYY') || '-' || LPAD(v_seq::text, 4, '0');
         
         -- Read program_id from metadata (passed during signup or admin creation)
         BEGIN

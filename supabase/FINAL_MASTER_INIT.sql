@@ -568,6 +568,9 @@ CREATE POLICY book_copies_librarian_all ON book_copies
 -- This function will run every time a new user signs up via Supabase Auth
 -- It automatically creates a record in our public.users and public.profiles tables.
 
+-- Ensure sequence exists for sequential registration numbers
+CREATE SEQUENCE IF NOT EXISTS public.student_reg_seq START WITH 1;
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -575,6 +578,7 @@ DECLARE
     v_role_name VARCHAR;
     v_program_id UUID;
     v_reg_number VARCHAR;
+    v_seq INT;
 BEGIN
     -- 1. Read role from user_metadata, default to 'Student' if not provided
     v_role_name := COALESCE(NEW.raw_user_meta_data->>'role', 'Student');
@@ -608,8 +612,9 @@ BEGIN
 
     -- 5. Create role-specific profile based on the actual role
     IF v_role_name = 'Student' THEN
-        -- Auto-generate a unique registration number: SP26-A1B2C3D4
-        v_reg_number := 'SP' || TO_CHAR(NOW(), 'YY') || '-' || UPPER(SUBSTRING(NEW.id::text FROM 1 FOR 8));
+        -- Auto-generate a unique sequential registration number: REG-YYYY-XXXX (incrementing)
+        v_seq := nextval('public.student_reg_seq');
+        v_reg_number := 'REG-' || TO_CHAR(NOW(), 'YYYY') || '-' || LPAD(v_seq::text, 4, '0');
         
         -- Read program_id from metadata (passed during signup or admin creation)
         BEGIN

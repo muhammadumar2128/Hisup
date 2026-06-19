@@ -24,10 +24,12 @@ export async function GET(request: Request) {
       .select(`
         id,
         student_id,
-        profiles!course_registrations_student_id_fkey ( 
-          first_name, 
-          last_name,
-          student_profiles ( registration_number )
+        student_profiles!course_registrations_student_id_fkey ( 
+          registration_number,
+          profiles ( 
+            first_name, 
+            last_name
+          )
         )
       `)
       .eq('section_id', sectionId)
@@ -38,8 +40,8 @@ export async function GET(request: Request) {
     const mapped = data.map((s: any) => ({
       id: s.id,
       student_id: s.student_id,
-      registration_number: s.profiles?.student_profiles?.registration_number || 'N/A',
-      name: `${s.profiles?.first_name || 'New'} ${s.profiles?.last_name || 'User'}`
+      registration_number: s.student_profiles?.registration_number || 'N/A',
+      name: `${s.student_profiles?.profiles?.first_name || 'New'} ${s.student_profiles?.profiles?.last_name || 'User'}`
     }));
 
     return NextResponse.json({ data: mapped });
