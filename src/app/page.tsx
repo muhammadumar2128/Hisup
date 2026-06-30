@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Chatbot from '@/components/shared/Chatbot';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { 
   GraduationCap, 
@@ -82,12 +82,21 @@ export default function LandingPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showPreloader, setShowPreloader] = useState(true);
 
   useEffect(() => {
     setMounted(true);
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    const timer = setTimeout(() => {
+      setShowPreloader(false);
+    }, 1200);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(timer);
+    };
   }, []);
 
   const containerVariants = {
@@ -104,7 +113,47 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 overflow-x-hidden relative transition-colors duration-300">
+    <>
+      <AnimatePresence>
+        {showPreloader && (
+          <motion.div
+            key="preloader"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -40 }}
+            transition={{ duration: 0.4, ease: 'easeInOut' }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 text-white"
+          >
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5, type: 'spring', stiffness: 200, damping: 20 }}
+              className="flex flex-col items-center space-y-4"
+            >
+              <div className="h-16 w-16 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/35">
+                <span className="text-white font-black text-4xl">H</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-2xl font-black tracking-tight leading-none text-white">
+                  HITEC
+                </span>
+                <span className="text-[10px] font-bold text-blue-400 tracking-wider uppercase mt-1.5">
+                  Smart Portal
+                </span>
+              </div>
+              <div className="w-24 h-1 bg-slate-800 rounded-full overflow-hidden relative">
+                <motion.div
+                  initial={{ left: '-100%' }}
+                  animate={{ left: '100%' }}
+                  transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                  className="absolute top-0 bottom-0 w-1/2 bg-blue-500 rounded-full"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 overflow-x-hidden relative transition-colors duration-300">
       {/* Background Decorative Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-blue-300/30 dark:bg-blue-900/20 rounded-full blur-[120px] animate-float-slow" />
@@ -323,5 +372,6 @@ export default function LandingPage() {
       {/* Floating Chatbot */}
       <Chatbot />
     </div>
+    </>
   );
 }

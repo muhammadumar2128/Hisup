@@ -209,7 +209,7 @@ export default function Chatbot() {
     }
   }, [isOpen]);
 
-  const handleSend = (text?: string) => {
+  const handleSend = async (text?: string) => {
     const messageText = text || input.trim();
     if (!messageText) return;
 
@@ -220,22 +220,48 @@ export default function Chatbot() {
       sender: 'user',
       timestamp: new Date(),
     };
-    setMessages(prev => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setInput('');
-
-    // Simulate typing delay
     setIsTyping(true);
-    setTimeout(() => {
+
+    try {
+      // Fetch AI response
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages: updatedMessages }),
+      });
+
+      const json = await response.json();
+
+      if (response.ok && json.reply) {
+        const botMsg: Message = {
+          id: Date.now().toString(),
+          text: json.reply,
+          sender: 'bot',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botMsg]);
+      } else {
+        throw new Error(json.error || 'Failed to fetch AI response');
+      }
+    } catch (err) {
+      console.warn('AI Chat failed, falling back to keyword engine:', err);
+      // Fallback matching
       const answer = findBestAnswer(messageText);
       const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
+        id: Date.now().toString(),
         text: answer,
         sender: 'bot',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, botMsg]);
+    } finally {
       setIsTyping(false);
-    }, 600 + Math.random() * 400); // 600-1000ms for realism
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -326,8 +352,11 @@ export default function Chatbot() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-slate-50 dark:bg-slate-950">
               {messages.map((msg) => (
-                <div
+                <motion.div
                   key={msg.id}
+                  initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 25 }}
                   className={`flex items-end gap-2 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                 >
                   {/* Avatar */}
@@ -350,12 +379,16 @@ export default function Chatbot() {
                   }`}>
                     {renderText(msg.text)}
                   </div>
-                </div>
+                </motion.div>
               ))}
 
               {/* Typing indicator */}
               {isTyping && (
-                <div className="flex items-end gap-2">
+                <motion.div 
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-end gap-2"
+                >
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
                     <Sparkles className="h-3.5 w-3.5 text-white" />
                   </div>
@@ -366,7 +399,7 @@ export default function Chatbot() {
                       <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               <div ref={messagesEndRef} />
@@ -374,7 +407,12 @@ export default function Chatbot() {
 
             {/* Quick Replies (show only if just welcome message) */}
             {messages.length <= 1 && !isTyping && (
-              <div className="px-4 py-3 flex flex-wrap gap-2 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0">
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="px-4 py-3 flex flex-wrap gap-2 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0"
+              >
                 {QUICK_REPLIES.map((reply) => (
                   <button
                     key={reply}
@@ -384,7 +422,7 @@ export default function Chatbot() {
                     {reply}
                   </button>
                 ))}
-              </div>
+              </motion.div>
             )}
 
             {/* Input */}
