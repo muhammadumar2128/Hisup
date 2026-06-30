@@ -1,15 +1,9 @@
--- ======================================================================================
--- FINAL PROJECT: DATABASE SCHEMA & ARCHITECTURE
--- System: HITEC Smart University Portal
--- ======================================================================================
 
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ======================================================================================
+
 -- MODULE 1: CORE IDENTITY & USER MANAGEMENT
--- Demonstrates Role-Based Access Control (RBAC) and User Profiling
--- ======================================================================================
 
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,
@@ -49,10 +43,9 @@ CREATE TABLE audit_logs (
 );
 
 
--- ======================================================================================
+
 -- MODULE 2: ACADEMIC HIERARCHY
--- Normalization of Campuses, Departments, Programs, and Semesters
--- ======================================================================================
+
 
 CREATE TABLE campuses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -89,9 +82,8 @@ CREATE TABLE semesters (
 );
 
 
--- ======================================================================================
 -- MODULE 3: COURSE MANAGEMENT & SCHEDULING
--- ======================================================================================
+
 
 CREATE TABLE courses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -110,11 +102,8 @@ CREATE TABLE course_prerequisites (
     PRIMARY KEY (course_id, prerequisite_course_id)
 );
 
-
--- ======================================================================================
 -- MODULE 4: ENTITY SPECIALIZATION (STUDENTS & FACULTY)
--- Demonstrates table inheritance / specialization concept for specific user types
--- ======================================================================================
+
 
 CREATE TABLE student_profiles (
     id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -134,9 +123,9 @@ CREATE TABLE faculty_profiles (
 );
 
 
--- ======================================================================================
+
 -- MODULE 5: CLASS SECTIONS & ATTENDANCE
--- ======================================================================================
+
 
 CREATE TABLE rooms (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -187,9 +176,8 @@ CREATE TABLE attendance (
 );
 
 
--- ======================================================================================
 -- MODULE 6: GRADING & EXAMINATIONS
--- ======================================================================================
+
 
 CREATE TABLE assessment_components (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -221,9 +209,9 @@ CREATE TABLE semester_results (
 );
 
 
--- ======================================================================================
+
 -- MODULE 7: FINANCE & INVOICING
--- ======================================================================================
+
 
 CREATE TABLE fee_heads (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -260,9 +248,8 @@ CREATE TABLE payments (
 );
 
 
--- ======================================================================================
+
 -- MODULE 8: LIBRARY MANAGEMENT
--- ======================================================================================
 
 CREATE TABLE books (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -309,10 +296,9 @@ CREATE TABLE library_fines (
 );
 
 
--- ======================================================================================
+
 -- MODULE 9: ADVANCED DATABASE LOGIC (STORED PROCEDURES & TRIGGERS)
--- Demonstrates the ability to automate database workflows upon user registration
--- ======================================================================================
+
 
 -- Ensure sequence exists for sequential registration numbers
 CREATE SEQUENCE IF NOT EXISTS public.student_reg_seq START WITH 1;
@@ -402,9 +388,9 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
 
--- ======================================================================================
+
 -- MODULE 10: DATABASE SECURITY (ROW LEVEL SECURITY POLICIES)
--- ======================================================================================
+
 
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -473,10 +459,9 @@ CREATE POLICY book_copies_read_all ON book_copies FOR SELECT USING (true);
 CREATE POLICY book_copies_librarian_all ON book_copies FOR ALL USING (get_current_user_role() IN ('Librarian', 'Admin'));
 
 
--- ======================================================================================
+
 -- MODULE 11: QUERY OPTIMIZATION (INDEXES & VIEWS)
--- Addresses: Views, Indexes, CTEs, and Window Functions
--- ======================================================================================
+
 
 -- 1. Indexes for Performance Optimization
 CREATE INDEX idx_student_program ON student_profiles(program_id);
@@ -508,10 +493,8 @@ SELECT
 FROM StudentGrades;
 
 
--- ======================================================================================
 -- MODULE 12: TRANSACTION MANAGEMENT & ADVANCED PROCEDURES
--- Addresses: Stored Procedures, Transaction Management, and Dynamic SQL
--- ======================================================================================
+
 
 -- Stored Procedure with explicit Transaction Control to process fee payments
 CREATE OR REPLACE PROCEDURE sp_process_fee_payment(

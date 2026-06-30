@@ -39,9 +39,11 @@ export default function AdminRegistrations() {
           status,
           registration_date,
           student_id,
-          profiles!inner (
-            first_name,
-            last_name
+          student_profiles!inner (
+            profiles!inner (
+              first_name,
+              last_name
+            )
           ),
           sections!inner (
             section_name,
@@ -55,7 +57,20 @@ export default function AdminRegistrations() {
         .order('registration_date', { ascending: false });
 
       if (error) throw error;
-      setRegistrations(data as any || []);
+      
+      const mapped: RegistrationRequest[] = (data || []).map((r: any) => ({
+        id: r.id,
+        status: r.status,
+        registration_date: r.registration_date,
+        student_id: r.student_id,
+        profiles: {
+          first_name: r.student_profiles?.profiles?.first_name || 'New',
+          last_name: r.student_profiles?.profiles?.last_name || 'User'
+        },
+        sections: r.sections
+      }));
+
+      setRegistrations(mapped);
     } catch (err) {
       console.error("Error fetching requests:", err);
     } finally {

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Chatbot from '@/components/shared/Chatbot';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -318,6 +319,9 @@ export default function LandingPage() {
           © {new Date().getFullYear()} HITEC Smart University Portal. All rights reserved.
         </p>
       </footer>
+
+      {/* Floating Chatbot */}
+      <Chatbot />
     </div>
   );
 }

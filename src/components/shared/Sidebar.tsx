@@ -58,6 +58,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           { name: 'My Profile', href: `${basePath}/profile`, icon: Users },
           { name: 'Academics', href: `${basePath}/academics`, icon: BookOpen },
           { name: 'Class Schedule', href: `${basePath}/schedule`, icon: LayoutDashboard },
+          { name: 'Attendance', href: `${basePath}/attendance`, icon: CheckCircle2 },
           { name: 'Fee & Invoices', href: `${basePath}/fee`, icon: CreditCard },
           { name: 'Library', href: `${basePath}/library`, icon: Library }
         );

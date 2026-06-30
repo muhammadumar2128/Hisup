@@ -225,11 +225,12 @@ export default function StudentDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-5 pb-5">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { label: 'Pay Fees', href: '/student/fee', icon: CreditCard, color: 'from-blue-500 to-blue-600', shadow: 'shadow-blue-500/20' },
                   { label: 'Schedule', href: '/student/schedule', icon: Clock, color: 'from-emerald-500 to-emerald-600', shadow: 'shadow-emerald-500/20' },
                   { label: 'Library', href: '/student/library', icon: BookOpen, color: 'from-purple-500 to-purple-600', shadow: 'shadow-purple-500/20' },
+                  { label: 'Attendance', href: '/student/attendance', icon: Bell, color: 'from-teal-500 to-teal-600', shadow: 'shadow-teal-500/20' },
                 ].map((action) => {
                   const ActionIcon = action.icon;
                   return (

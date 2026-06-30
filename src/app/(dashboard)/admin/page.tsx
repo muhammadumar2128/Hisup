@@ -23,8 +23,10 @@ const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f97316', '#ec4899'];
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     async function fetchStats() {
       try {
         // 1. Fetch User Distribution from profiles/users
@@ -143,79 +145,83 @@ export default function AdminDashboard() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         {/* Platform Distribution Chart */}
-        <Card className="lg:col-span-4 flex flex-col border-0 shadow-lg bg-white dark:bg-slate-900 rounded-3xl overflow-hidden">
+        <Card className="lg:col-span-4 border-0 shadow-lg bg-white dark:bg-slate-900 rounded-3xl overflow-hidden">
           <CardHeader className="border-b border-slate-50 dark:border-slate-800 pb-4">
             <CardTitle className="text-xl font-bold flex items-center text-slate-900 dark:text-white">
               <Users className="mr-2 h-5 w-5 text-blue-600" />
               Platform Distribution
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 min-h-0 pt-4" style={{ height: 320 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={roleData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  innerRadius={55}
-                  fill="#8884d8"
-                  dataKey="value"
-                  paddingAngle={3}
-                  strokeWidth={0}
-                >
-                  {roleData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ 
-                    borderRadius: '16px', 
-                    border: 'none', 
-                    boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="h-80 pt-4 relative w-full">
+            {mounted && (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={roleData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    innerRadius={55}
+                    fill="#8884d8"
+                    dataKey="value"
+                    paddingAngle={3}
+                    strokeWidth={0}
+                  >
+                    {roleData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ 
+                      borderRadius: '16px', 
+                      border: 'none', 
+                      boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
         {/* Academic Engagement Chart */}
-        <Card className="lg:col-span-3 flex flex-col border-0 shadow-lg bg-white dark:bg-slate-900 rounded-3xl overflow-hidden">
+        <Card className="lg:col-span-3 border-0 shadow-lg bg-white dark:bg-slate-900 rounded-3xl overflow-hidden">
           <CardHeader className="border-b border-slate-50 dark:border-slate-800 pb-4">
             <CardTitle className="text-xl font-bold flex items-center text-slate-900 dark:text-white">
               <TrendingUp className="mr-2 h-5 w-5 text-emerald-600" />
               Academic Engagement
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 min-h-0 pt-4" style={{ height: 320 }}>
-             <ResponsiveContainer width="100%" height="100%">
-               <BarChart data={academicData}>
-                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                 <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 600 }} />
-                 <YAxis tick={{ fontSize: 12 }} />
-                 <Tooltip
-                   contentStyle={{ 
-                     borderRadius: '16px', 
-                     border: 'none', 
-                     boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)',
-                     fontSize: '14px',
-                     fontWeight: 600,
-                   }}
-                 />
-                 <Bar dataKey="value" fill="url(#barGradient)" radius={[8, 8, 0, 0]} />
-                 <defs>
-                   <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                     <stop offset="0%" stopColor="#3b82f6" />
-                     <stop offset="100%" stopColor="#6366f1" />
-                   </linearGradient>
-                 </defs>
-               </BarChart>
-             </ResponsiveContainer>
+          <CardContent className="h-80 pt-4 relative w-full">
+             {mounted && (
+               <ResponsiveContainer width="100%" height="100%">
+                 <BarChart data={academicData}>
+                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                   <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 600 }} />
+                   <YAxis tick={{ fontSize: 12 }} />
+                   <Tooltip
+                     contentStyle={{ 
+                       borderRadius: '16px', 
+                       border: 'none', 
+                       boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)',
+                       fontSize: '14px',
+                       fontWeight: 600,
+                     }}
+                   />
+                   <Bar dataKey="value" fill="url(#barGradient)" radius={[8, 8, 0, 0]} />
+                   <defs>
+                     <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                       <stop offset="0%" stopColor="#3b82f6" />
+                       <stop offset="100%" stopColor="#6366f1" />
+                     </linearGradient>
+                   </defs>
+                 </BarChart>
+               </ResponsiveContainer>
+             )}
           </CardContent>
         </Card>
       </div>
