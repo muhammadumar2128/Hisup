@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Bot, User, Sparkles } from 'lucide-react';
+import Image from 'next/image';
 
 // ──────────────────────────────────────────────
 // Knowledge Base
@@ -274,14 +275,16 @@ export default function Chatbot() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 p-4 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-full shadow-2xl shadow-blue-600/40 hover:shadow-blue-600/60 transition-shadow"
+            className="fixed bottom-6 right-6 z-50 h-16 w-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full shadow-2xl overflow-hidden cursor-pointer"
             aria-label="Open chat"
           >
-            <MessageCircle className="h-6 w-6" />
+            <div className="relative w-full h-full p-1 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900">
+              <Image src="/chatbot.png" alt="Chatbot avatar" fill className="object-cover rounded-full" />
+            </div>
             {/* Pulse ring */}
-            <span className="absolute -top-1 -right-1 flex h-4 w-4">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-blue-400 border-2 border-white"></span>
+            <span className="absolute top-0 right-0 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white dark:border-slate-900"></span>
             </span>
           </motion.button>
         )}
