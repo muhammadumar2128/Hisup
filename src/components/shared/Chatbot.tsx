@@ -68,7 +68,7 @@ const KNOWLEDGE_BASE: QAPair[] = [
   },
   {
     keywords: ['password', 'forgot', 'reset', 'cant login', 'locked', 'can\'t login'],
-    answer: '🔐 **Forgot Your Password?**\n\n1. Go to the Login page\n2. Click "Forgot Password"\n3. Enter your university email\n4. Check your inbox for a password reset link\n5. Create a new password\n\nIf you still can\'t access your account, contact IT support:\n📧 it.support@hitecuni.edu.pk',
+    answer: '🔐 **Forgot Your Password?**\n\n1. Go to the Login page\n2. Click "Forgot Password"\n3. Enter your university email\n4. Check your inbox for a password reset link\n5. Create a new password\n\nIf you still can\'t access your account, contact IT support:\n📧 umar2128@gmail.com',
   },
   {
     keywords: ['grades', 'grade', 'cgpa', 'gpa', 'sgpa', 'result', 'results', 'transcript', 'marks'],
@@ -77,7 +77,7 @@ const KNOWLEDGE_BASE: QAPair[] = [
   // Contact
   {
     keywords: ['contact', 'phone', 'email', 'call', 'help', 'support', 'helpline', 'reach', 'office'],
-    answer: '📞 **Contact Information:**\n\n**Admin Office:**\n• 📧 admin@hitecuni.edu.pk\n• 📞 +92-51-9314354\n\n**Admissions Office:**\n• 📧 admissions@hitecuni.edu.pk\n• 📞 +92-51-9314252\n\n**IT Support:**\n• 📧 it.support@hitecuni.edu.pk\n\n**Address:**\nHITEC University, Taxila Cantt, Punjab, Pakistan\n\n**Office Hours:** Mon–Fri, 8:00 AM – 4:00 PM',
+    answer: '📞 **Contact Information:**\n\n**Support Desk:**\n• 📧 umar2128@gmail.com\n• 📞 03155225523\n\n**Admissions Office:**\n• 📧 admissions@hitecuni.edu.pk\n• 📞 +92-51-9314252\n\n**IT Support:**\n• 📧 umar2128@gmail.com\n\n**Address:**\nHITEC University, Taxila Cantt, Punjab, Pakistan\n\n**Office Hours:** Mon–Fri, 8:00 AM – 4:00 PM',
   },
   // Transport
   {
